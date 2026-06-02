@@ -2,7 +2,6 @@ package types
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -12,6 +11,11 @@ import (
 type UUIDArray []uuid.UUID
 
 func (a *UUIDArray) Scan(value interface{}) error {
+	if value == nil {
+		*a = nil
+		return nil
+	}
+
 	var str string
 	switch v := value.(type) {
 	case []byte:
@@ -19,7 +23,7 @@ func (a *UUIDArray) Scan(value interface{}) error {
 	case string:
 		str = v
 	default:
-		return errors.New("unsupported type for UUIDArray")
+		return fmt.Errorf("unsupported type for UUIDArray: %T", value)
 	}
 
 	str = strings.TrimPrefix(str, "{")

@@ -21,7 +21,7 @@ type Config struct {
 	JWTSecret           string
 	JWTExpired          string
 	RefreshTokenExpired string
-	JWTExpiryMinutes    string
+	JWTExpiredMinutes   string
 }
 
 func LoadEnv() {
@@ -35,7 +35,7 @@ func LoadEnv() {
 		JWTSecret:           getEnv("JWT_SECRET", ""),
 		JWTExpired:          getEnv("JWT_EXPIRED", "15m"),
 		RefreshTokenExpired: getEnv("REFRESH_TOKEN_EXPIRED", "7d"),
-		JWTExpiryMinutes:    getEnv("JWT_EXPIRY_MINUTES", "15"),
+		JWTExpiredMinutes:   getEnv("JWT_EXPIRED_MINUTES", "15"),
 	}
 }
 
@@ -69,7 +69,7 @@ func ConnectDB() {
 	log.Println("Berhasil terhubung ke Neon PostgreSQL!")
 
 	// 1. Batasi koneksi maksimal yang dibuka aplikasi secara bersamaan
-	sqlDB.SetMaxOpenConns(20) 
+	sqlDB.SetMaxOpenConns(20)
 	// 2. Jumlah koneksi standby/menganggur di pool
 	sqlDB.SetMaxIdleConns(5)
 	// 3. Waktu maksimal koneksi menganggur sebelum ditutup otomatis (PENTING untuk Neon)

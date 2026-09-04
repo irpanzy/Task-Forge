@@ -22,9 +22,6 @@ type Config struct {
 	JWTExpired          string
 	RefreshTokenExpired string
 	JWTExpiryMinutes    string
-	AdminEmail          string
-	AdminPassword       string
-	AdminRole           string
 }
 
 func LoadEnv() {
@@ -33,15 +30,12 @@ func LoadEnv() {
 		log.Println("Warning: .env file not found, loading from system env: " + err.Error())
 	}
 	AppConfig = &Config{
-		Port:                getEnv("PORT", ""),
+		Port:                getEnv("PORT", "3000"),
 		DatabaseURL:         getEnv("DATABASE_URL", ""),
 		JWTSecret:           getEnv("JWT_SECRET", ""),
-		JWTExpired:          getEnv("JWT_EXPIRED", ""),
-		RefreshTokenExpired: getEnv("REFRESH_TOKEN_EXPIRED", ""),
-		JWTExpiryMinutes:    getEnv("JWT_EXPIRY_MINUTES", ""),
-		AdminEmail:          getEnv("ADMIN_EMAIL", ""),
-		AdminPassword:       getEnv("ADMIN_PASSWORD", ""),
-		AdminRole:           getEnv("ADMIN_ROLE", ""),
+		JWTExpired:          getEnv("JWT_EXPIRED", "15m"),
+		RefreshTokenExpired: getEnv("REFRESH_TOKEN_EXPIRED", "7d"),
+		JWTExpiryMinutes:    getEnv("JWT_EXPIRY_MINUTES", "15"),
 	}
 }
 

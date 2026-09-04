@@ -1,4 +1,4 @@
-package models
+package model
 
 type CardAssignee struct {
 	CardID int64 `json:"card_id" db:"card_id" gorm:"not null;index"`

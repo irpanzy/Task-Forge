@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/irpanzy/Task-Forge/internal/config"
 	"github.com/irpanzy/Task-Forge/internal/dto"
 	"github.com/irpanzy/Task-Forge/internal/middleware"
@@ -18,6 +19,7 @@ type AuthController interface {
 	Login(c *fiber.Ctx) error
 	Logout(c *fiber.Ctx) error
 	GetCSRFToken(c *fiber.Ctx) error
+	RefreshToken(c *fiber.Ctx) error
 }
 
 type authController struct {
@@ -116,4 +118,56 @@ func (ctrl *authController) Login(c *fiber.Ctx) error {
 func (ctrl *authController) Logout(c *fiber.Ctx) error {
 	c.ClearCookie("access_token", "refresh_token")
 	return response.Success(c, fiber.StatusOK, "Logout berhasil", nil)
+}
+
+func (ctrl *authController) RefreshToken(c *fiber.Ctx) error {
+	refreshToken := c.Cookies("refresh_token")
+	if refreshToken == "" {
+		return response.Error(c, fiber.StatusUnauthorized, "Refresh token tidak ditemukan di cookie", nil)
+	}
+
+	claims, err := utils.VerifyToken(refreshToken)
+	if err != nil {
+		return response.Error(c, fiber.StatusUnauthorized, "Refresh token tidak valid atau kadaluarsa", nil)
+	}
+
+	publicIDStr, ok := claims["public_id"].(string)
+	if !ok {
+		return response.Error(c, fiber.StatusUnauthorized, "Payload token tidak valid", nil)
+	}
+
+	publicID, err := uuid.Parse(publicIDStr)
+	if err != nil {
+		return response.Error(c, fiber.StatusUnauthorized, "Format public_id tidak valid", nil)
+	}
+
+	userRes, err := ctrl.userService.GetDetail(publicID)
+	if err != nil {
+		return response.Error(c, fiber.StatusUnauthorized, "User tidak ditemukan", nil)
+	}
+
+	var userID int64
+	if idVal, ok := claims["user_id"].(float64); ok {
+		userID = int64(idVal)
+	}
+
+	newAccessToken, err := utils.GenerateToken(userID, userRes.Role, userRes.Email, userRes.PublicID)
+	if err != nil {
+		return response.Error(c, fiber.StatusInternalServerError, "Gagal membuat access token baru", nil)
+	}
+
+	accessDuration := utils.ParseDuration(config.AppConfig.JWTExpired, 15*time.Minute)
+	c.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    newAccessToken,
+		Expires:  time.Now().Add(accessDuration),
+		HTTPOnly: true,
+		Secure:   false,
+		SameSite: "Lax",
+		Path:     "/",
+	})
+
+	return response.Success(c, fiber.StatusOK, "Token berhasil diperbarui", fiber.Map{
+		"access_token": newAccessToken,
+	})
 }

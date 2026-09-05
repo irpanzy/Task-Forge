@@ -11,4 +11,5 @@ func RegisterAuthRoutes(router fiber.Router, authCtrl controller.AuthController)
 	auth.Post("/register", authCtrl.Register)
 	auth.Post("/login", authCtrl.Login)
 	auth.Post("/logout", authCtrl.Logout)
+	auth.Post("/refresh", authCtrl.RefreshToken)
 }

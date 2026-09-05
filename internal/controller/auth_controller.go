@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/irpanzy/Task-Forge/internal/config"
 	"github.com/irpanzy/Task-Forge/internal/dto"
+	"github.com/irpanzy/Task-Forge/internal/middleware"
 	"github.com/irpanzy/Task-Forge/internal/service"
 	"github.com/irpanzy/Task-Forge/pkg/response"
 	"github.com/irpanzy/Task-Forge/pkg/utils"
@@ -29,8 +29,8 @@ func NewAuthController(userService service.UserService) AuthController {
 }
 
 func (ctrl *authController) GetCSRFToken(c *fiber.Ctx) error {
-	token, ok := c.Locals(csrf.ConfigDefault.ContextKey).(string)
-	if !ok || token == "" {
+	token, _ := c.Locals(middleware.CSRFContextKey).(string)
+	if token == "" {
 		token = c.Cookies("csrf_")
 	}
 	if token == "" {

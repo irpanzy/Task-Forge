@@ -8,9 +8,12 @@ import (
 	"github.com/irpanzy/Task-Forge/pkg/response"
 )
 
+const CSRFContextKey = "csrf"
+
 func NewCSRF() fiber.Handler {
 	return csrf.New(csrf.Config{
 		KeyLookup:      "header:X-CSRF-Token",
+		ContextKey:     CSRFContextKey,
 		CookieName:     "csrf_",
 		CookieSameSite: "Lax",
 		CookieSecure:   false, // Set true jika sudah di environment HTTPS production

@@ -12,14 +12,13 @@ import (
 	"github.com/irpanzy/Task-Forge/internal/config"
 )
 
-// GenerateToken membuat Access Token
 func GenerateToken(userID int64, role, email string, publicID uuid.UUID) (string, error) {
 	secret := config.AppConfig.JWTSecret
 	if secret == "" {
 		return "", errors.New("JWT_SECRET belum diatur di .env")
 	}
 
-	duration := parseDuration(config.AppConfig.JWTExpired, 15*time.Minute)
+	duration := ParseDuration(config.AppConfig.JWTExpired, 15*time.Minute)
 
 	claims := jwt.MapClaims{
 		"user_id":   userID,
@@ -34,14 +33,13 @@ func GenerateToken(userID int64, role, email string, publicID uuid.UUID) (string
 	return token.SignedString([]byte(secret))
 }
 
-// GenerateRefreshToken membuat Refresh Token 
 func GenerateRefreshToken(userID int64, publicID uuid.UUID) (string, error) {
 	secret := config.AppConfig.JWTSecret
 	if secret == "" {
 		return "", errors.New("JWT_SECRET belum diatur di .env")
 	}
 
-	duration := parseDuration(config.AppConfig.RefreshTokenExpired, 7*24*time.Hour)
+	duration := ParseDuration(config.AppConfig.RefreshTokenExpired, 7*24*time.Hour)
 
 	claims := jwt.MapClaims{
 		"user_id":   userID,
@@ -54,7 +52,6 @@ func GenerateRefreshToken(userID int64, publicID uuid.UUID) (string, error) {
 	return token.SignedString([]byte(secret))
 }
 
-// VerifyToken memvalidasi keaslian token dan mengembalikan claims datanya
 func VerifyToken(tokenString string) (jwt.MapClaims, error) {
 	secret := config.AppConfig.JWTSecret
 	if secret == "" {
@@ -80,8 +77,7 @@ func VerifyToken(tokenString string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-// parseDuration helper agar bisa membaca format menit '15m' maupun hari '7d'
-func parseDuration(str string, fallback time.Duration) time.Duration {
+func ParseDuration(str string, fallback time.Duration) time.Duration {
 	if str == "" {
 		return fallback
 	}

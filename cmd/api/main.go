@@ -38,9 +38,10 @@ func main() {
 	userRepo := repository.NewUserRepository(config.DB)
 	userService := service.NewUserService(userRepo)
 	authController := controller.NewAuthController(userService)
+	userController := controller.NewUserController(userService)
 
 	// 5. Setup Routes
-	route.SetupRoutes(app, authController)
+	route.SetupRoutes(app, authController, userController)
 
 	// 6. Start Server
 	port := config.AppConfig.Port

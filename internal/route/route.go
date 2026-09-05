@@ -5,8 +5,9 @@ import (
 	"github.com/irpanzy/Task-Forge/internal/controller"
 )
 
-func SetupRoutes(app *fiber.App, authCtrl controller.AuthController) {
+func SetupRoutes(app *fiber.App, authCtrl controller.AuthController, userCtrl controller.UserController) {
 	api := app.Group("/api")
 
 	RegisterAuthRoutes(api, authCtrl)
+	RegisterUserRoutes(api, userCtrl)
 }

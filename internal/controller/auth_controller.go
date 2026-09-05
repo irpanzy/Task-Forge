@@ -31,6 +31,9 @@ func NewAuthController(userService service.UserService) AuthController {
 func (ctrl *authController) GetCSRFToken(c *fiber.Ctx) error {
 	token, ok := c.Locals(csrf.ConfigDefault.ContextKey).(string)
 	if !ok || token == "" {
+		token = c.Cookies("csrf_")
+	}
+	if token == "" {
 		return response.Error(c, fiber.StatusInternalServerError, "Gagal mendapatkan CSRF token", nil)
 	}
 

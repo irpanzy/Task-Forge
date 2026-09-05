@@ -1,8 +1,8 @@
-package models
+package model
 
 import (
 	"github.com/google/uuid"
-	"github.com/irpanzy/Task-Forge/models/types"
+	"github.com/irpanzy/Task-Forge/internal/model/types"
 )
 
 type ListPosition struct {

@@ -264,7 +264,7 @@ Overview table for user endpoints:
 | Method | Endpoint | Access / Guard | Parameters | Request Body | Success Status | Description |
 | :---: | :--- | :---: | :--- | :---: | :---: | :--- |
 | `GET` | `/api/users/me` | Authenticated | - | - | `200` | Profile of currently authenticated user |
-| `GET` | `/api/users` | `admin` only | Query: `?page=1&limit=10` | - | `200` | List of all users with pagination |
+| `GET` | `/api/users` | `admin` only | Query: `?page=1&limit=10&search=budi` | - | `200` | List of all users with pagination and search |
 | `GET` | `/api/users/:id` | Authenticated | Path: `:id` (UUID) | - | `200` | Detail of user by public UUID |
 | `PUT` | `/api/users/:id` | Self / Admin | Path: `:id` (UUID) | `{ name?, email? }` | `200` | Update user name or email |
 | `DELETE` | `/api/users/:id` | `admin` only | Path: `:id` (UUID) | - | `200` | Delete user (prevents deleting active self) |
@@ -298,16 +298,17 @@ Retrieves profile data for the currently authenticated user.
 
 ---
 
-#### 2. Get All Users (Pagination)
-Retrieves a paginated list of all registered users in the system.
+#### 2. Get All Users (Pagination & Search)
+Retrieves a paginated and searchable list of all registered users in the system.
 
 - **Method**: `GET`
 - **URL**: `/api/users`
 - **Access**: **`admin`** only
 - **Query Parameters**:
+  - `search` (optional): Search keyword across user `name` or `email` (case-insensitive).
   - `page` (optional, default: `1`): Page number.
   - `limit` (optional, default: `10`, max: `100`): Items per page.
-- **Example URL**: `/api/users?page=1&limit=10`
+- **Example URL**: `/api/users?page=1&limit=10&search=budi`
 
 **Success Response (200 OK):**
 ```json

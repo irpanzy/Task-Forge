@@ -43,8 +43,9 @@ func (ctrl *userController) GetProfile(c *fiber.Ctx) error {
 	return response.Success(c, fiber.StatusOK, "Profile retrieved successfully", user)
 }
 
-// GetUsers retrieves all users with pagination - Admin only
+// GetUsers retrieves all users with pagination and search filter - Admin only
 func (ctrl *userController) GetUsers(c *fiber.Ctx) error {
+	search := strings.TrimSpace(c.Query("search"))
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 
@@ -55,7 +56,7 @@ func (ctrl *userController) GetUsers(c *fiber.Ctx) error {
 		limit = 10
 	}
 
-	result, err := ctrl.userService.GetUsers(page, limit)
+	result, err := ctrl.userService.GetUsers(search, page, limit)
 	if err != nil {
 		return response.Error(c, fiber.StatusInternalServerError, "Failed to retrieve users", err.Error())
 	}

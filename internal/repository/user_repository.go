@@ -11,7 +11,7 @@ type UserRepository interface {
 	FindByEmail(email string) (*model.User, error)
 	FindByPublicID(publicID uuid.UUID) (*model.User, error)
 	FindByInternalID(internalID int64) (*model.User, error)
-	FindAll(offset, limit int) ([]model.User, int64, error)
+	FindAll(search string, offset, limit int) ([]model.User, int64, error)
 	Update(user *model.User) error
 	Delete(publicID uuid.UUID) error
 }
@@ -55,15 +55,21 @@ func (r *userRepository) FindByInternalID(internalID int64) (*model.User, error)
 	return &user, nil
 }
 
-func (r *userRepository) FindAll(offset, limit int) ([]model.User, int64, error) {
+func (r *userRepository) FindAll(search string, offset, limit int) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
 
-	if err := r.db.Model(&model.User{}).Count(&total).Error; err != nil {
+	query := r.db.Model(&model.User{})
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		query = query.Where("name ILIKE ? OR email ILIKE ?", searchPattern, searchPattern)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	err := r.db.Offset(offset).Limit(limit).Order("created_at DESC").Find(&users).Error
+	err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&users).Error
 	if err != nil {
 		return nil, 0, err
 	}

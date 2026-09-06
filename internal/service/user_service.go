@@ -16,7 +16,7 @@ type UserService interface {
 	Register(req *dto.RegisterRequest) (*dto.UserResponse, error)
 	Login(req *dto.LoginRequest) (*dto.LoginResponse, error)
 	GetDetail(publicID uuid.UUID) (*dto.UserResponse, error)
-	GetUsers(page, limit int) (*dto.PaginatedUsersResponse, error)
+	GetUsers(search string, page, limit int) (*dto.PaginatedUsersResponse, error)
 	Update(publicID uuid.UUID, req *dto.UpdateUserRequest) (*dto.UserResponse, error)
 	Delete(publicID uuid.UUID) error
 }
@@ -101,7 +101,7 @@ func (s *userService) GetDetail(publicID uuid.UUID) (*dto.UserResponse, error) {
 	return &res, nil
 }
 
-func (s *userService) GetUsers(page, limit int) (*dto.PaginatedUsersResponse, error) {
+func (s *userService) GetUsers(search string, page, limit int) (*dto.PaginatedUsersResponse, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -111,7 +111,7 @@ func (s *userService) GetUsers(page, limit int) (*dto.PaginatedUsersResponse, er
 
 	offset := (page - 1) * limit
 
-	users, totalData, err := s.userRepo.FindAll(offset, limit)
+	users, totalData, err := s.userRepo.FindAll(search, offset, limit)
 	if err != nil {
 		return nil, err
 	}

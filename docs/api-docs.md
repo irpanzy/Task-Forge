@@ -1,106 +1,106 @@
 # TaskForge API Documentation
 
-Dokumentasi lengkap RESTful API untuk backend **TaskForge**.
+RESTful API documentation for the **TaskForge** backend.
 
 - **Base URL**: `http://localhost:3000/api`
 - **Content-Type**: `application/json`
-- **Format Respons**: JSend-compliant JSON
+- **Response Format**: JSend-compliant JSON
 
 ---
 
-## 1. Mekanisme Keamanan
+## 1. Security Mechanisms
 
 ### A. Double Submit CSRF Protection
-Untuk seluruh request yang memodifikasi data (`POST`, `PUT`, `DELETE`), API ini dilindungi oleh middleware CSRF:
-1. Panggil `GET /api/auth/csrf` sebelum melakukan request formulir/login/registrasi.
-2. Server akan mengembalikan `csrf_token` dalam response body dan otomatis menyetel cookie `csrf_`.
-3. Sertakan header berikut pada setiap request `POST`, `PUT`, `DELETE`:
+For all state-modifying requests (`POST`, `PUT`, `DELETE`), the API is protected by CSRF middleware:
+1. Call `GET /api/auth/csrf` before submitting forms, logging in, or registering.
+2. The server responds with `csrf_token` in the response body and sets a `csrf_` cookie.
+3. Include the following header on all `POST`, `PUT`, `DELETE` requests:
    ```http
-   X-CSRF-Token: <nilai_csrf_token>
+   X-CSRF-Token: <csrf_token_value>
    ```
-4. Pastikan cookie `csrf_` ikut terkirim bersama request (ditangani otomatis oleh browser jika `withCredentials: true` atau Postman).
+4. Ensure the `csrf_` cookie is sent alongside the request (handled automatically by browsers with `withCredentials: true` or Postman).
 
-### B. Autentikasi JWT & HTTPOnly Cookie
-Setelah login berhasil, server akan menyetel dua cookie dengan flag `HttpOnly`:
-- **`access_token`**: Digunakan untuk mengautentikasi setiap protected endpoint (masa aktif default: 15 menit).
-- **`refresh_token`**: Digunakan untuk memperpanjang `access_token` tanpa perlu login ulang (masa aktif default: 7 hari).
+### B. JWT Authentication & HTTPOnly Cookies
+After successful login, the server sets two cookies with the `HttpOnly` flag:
+- **`access_token`**: Used to authenticate protected endpoints (default expiry: 15 minutes).
+- **`refresh_token`**: Used to obtain a new `access_token` without logging in again (default expiry: 7 days).
 
-> **Fallback:** Klien non-browser (seperti mobile app) juga dapat mengirimkan token via header:
+> **Fallback:** Non-browser clients (such as mobile apps) can also send the token via the Authorization header:
 > ```http
 > Authorization: Bearer <access_token>
 > ```
 
 ---
 
-## 2. Format Standar Respons
+## 2. Standard Response Format
 
-### Respons Berhasil (Success)
+### Success Response
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "Pesan deskriptif keberhasilan",
+  "message": "Descriptive success message",
   "data": { ... }
 }
 ```
 
-### Respons Gagal (Error)
+### Error Response
 ```json
 {
   "status": "error",
   "code": 400,
-  "message": "Pesan deskriptif kesalahan",
-  "errors": "Detail error atau null"
+  "message": "Descriptive error message",
+  "errors": "Detailed error string or null"
 }
 ```
 
 ---
 
-## 3. Daftar Endpoint
+## 3. Endpoints
 
-### Modul Auth (`/api/auth`)
+### Auth Module (`/api/auth`)
 
-Tabel ikhtisar endpoint autentikasi:
+Overview table for authentication endpoints:
 
-| Method | Endpoint | Akses | Header Wajib | Request Body | Status Sukses | Deskripsi |
+| Method | Endpoint | Access | Required Header | Request Body | Success Status | Description |
 | :---: | :--- | :---: | :--- | :---: | :---: | :--- |
-| `GET` | `/api/auth/csrf` | Publik | - | - | `200` | Mengambil CSRF token & cookie `csrf_` |
-| `POST` | `/api/auth/register` | Publik | `X-CSRF-Token` | `{ name, email, password }` | `201` | Registrasi user baru (default role: `user`) |
-| `POST` | `/api/auth/login` | Publik | `X-CSRF-Token` | `{ email, password }` | `200` | Login & set cookie `access_token` & `refresh_token` |
-| `POST` | `/api/auth/refresh` | Publik | `X-CSRF-Token` *(Cookie: `refresh_token`)* | - | `200` | Memperbarui `access_token` baru |
-| `POST` | `/api/auth/logout` | Publik | `X-CSRF-Token` | - | `200` | Menghapus session cookie di client |
+| `GET` | `/api/auth/csrf` | Public | - | - | `200` | Retrieve CSRF token & `csrf_` cookie |
+| `POST` | `/api/auth/register` | Public | `X-CSRF-Token` | `{ name, email, password }` | `201` | Register new user (default role: `user`) |
+| `POST` | `/api/auth/login` | Public | `X-CSRF-Token` | `{ email, password }` | `200` | Login & set `access_token` & `refresh_token` cookies |
+| `POST` | `/api/auth/refresh` | Public | `X-CSRF-Token` *(Cookie: `refresh_token`)* | - | `200` | Issue a new `access_token` |
+| `POST` | `/api/auth/logout` | Public | `X-CSRF-Token` | - | `200` | Clear session cookies |
 
 ---
 
 #### 1. Get CSRF Token
-Mengambil token CSRF baru untuk digunakan pada request berikutnya.
+Retrieves a fresh CSRF token to use in subsequent requests.
 
 - **Method**: `GET`
 - **URL**: `/api/auth/csrf`
-- **Akses**: Publik
-- **Headers**: Tidak ada
+- **Access**: Public
+- **Headers**: None
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "CSRF token berhasil diambil",
+  "message": "CSRF token retrieved successfully",
   "data": {
     "csrf_token": "d2a1941c-f74b-4601-87dc-711cf81825cc"
   }
 }
 ```
-*Catatan: Header response menyertakan `Set-Cookie: csrf_=...; Path=/; SameSite=Lax`.*
+*Note: Response header includes `Set-Cookie: csrf_=...; Path=/; SameSite=Lax`.*
 
 ---
 
 #### 2. Register
-Mendaftarkan pengguna baru dengan role default `user`.
+Registers a new user account with default role `user`.
 
 - **Method**: `POST`
 - **URL**: `/api/auth/register`
-- **Akses**: Publik
+- **Access**: Public
 - **Headers**:
   - `Content-Type: application/json`
   - `X-CSRF-Token: <token>`
@@ -108,27 +108,27 @@ Mendaftarkan pengguna baru dengan role default `user`.
 **Request Body:**
 ```json
 {
-  "name": "Budi Santoso",
-  "email": "budi@example.com",
+  "name": "John Doe",
+  "email": "john@example.com",
   "password": "password123"
 }
 ```
 
-**Validasi:**
-- `name`: Wajib diisi.
-- `email`: Wajib format email valid dan belum terdaftar.
-- `password`: Minimal 6 karakter.
+**Validation:**
+- `name`: Required.
+- `email`: Required, valid email format, and not already registered.
+- `password`: Minimum 6 characters.
 
-**Respons Sukses (201 Created):**
+**Success Response (201 Created):**
 ```json
 {
   "status": "success",
   "code": 201,
-  "message": "Registrasi berhasil",
+  "message": "Registration successful",
   "data": {
     "public_id": "8f3b2075-e8d9-4b21-9562-b13c7bb61c6b",
-    "name": "Budi Santoso",
-    "email": "budi@example.com",
+    "name": "John Doe",
+    "email": "john@example.com",
     "role": "user",
     "created_at": "2026-09-05T22:30:00Z",
     "updated_at": "2026-09-05T22:30:00Z"
@@ -136,12 +136,12 @@ Mendaftarkan pengguna baru dengan role default `user`.
 }
 ```
 
-**Respons Error Contoh (400 Bad Request):**
+**Example Error Response (400 Bad Request):**
 ```json
 {
   "status": "error",
   "code": 400,
-  "message": "email sudah digunakan",
+  "message": "email is already registered",
   "errors": null
 }
 ```
@@ -149,11 +149,11 @@ Mendaftarkan pengguna baru dengan role default `user`.
 ---
 
 #### 3. Login
-Melakukan autentikasi menggunakan email dan password.
+Authenticates user using email and password credentials.
 
 - **Method**: `POST`
 - **URL**: `/api/auth/login`
-- **Akses**: Publik
+- **Access**: Public
 - **Headers**:
   - `Content-Type: application/json`
   - `X-CSRF-Token: <token>`
@@ -166,12 +166,12 @@ Melakukan autentikasi menggunakan email dan password.
 }
 ```
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "Login berhasil",
+  "message": "Login successful",
   "data": {
     "public_id": "cc3b4487-901b-45b6-8c32-580de73a8aeb",
     "name": "Administrator",
@@ -182,14 +182,14 @@ Melakukan autentikasi menggunakan email dan password.
   }
 }
 ```
-*Catatan: Server menyetel cookie `access_token` dan `refresh_token` (`HttpOnly`, `SameSite=Lax`).*
+*Note: Server sets `access_token` and `refresh_token` cookies (`HttpOnly`, `SameSite=Lax`).*
 
-**Respons Error Contoh (401 Unauthorized):**
+**Example Error Response (401 Unauthorized):**
 ```json
 {
   "status": "error",
   "code": 401,
-  "message": "email atau password salah",
+  "message": "invalid email or password",
   "errors": null
 }
 ```
@@ -197,34 +197,34 @@ Melakukan autentikasi menggunakan email dan password.
 ---
 
 #### 4. Refresh Token
-Menerbitkan `access_token` baru ketika token lama telah kadaluarsa.
+Issues a new `access_token` when the existing access token has expired.
 
 - **Method**: `POST`
 - **URL**: `/api/auth/refresh`
-- **Akses**: Publik (memerlukan cookie `refresh_token`)
+- **Access**: Public (requires `refresh_token` cookie)
 - **Headers**:
   - `X-CSRF-Token: <token>`
 
-**Request Body:** Tidak ada.
+**Request Body:** None.
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "Token berhasil diperbarui",
+  "message": "Token refreshed successfully",
   "data": {
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
 
-**Respons Error Contoh (401 Unauthorized):**
+**Example Error Response (401 Unauthorized):**
 ```json
 {
   "status": "error",
   "code": 401,
-  "message": "Refresh token tidak valid atau kadaluarsa",
+  "message": "Invalid or expired refresh token",
   "errors": null
 }
 ```
@@ -232,59 +232,59 @@ Menerbitkan `access_token` baru ketika token lama telah kadaluarsa.
 ---
 
 #### 5. Logout
-Menghapus session cookie di client.
+Clears authentication session cookies on the client.
 
 - **Method**: `POST`
 - **URL**: `/api/auth/logout`
-- **Akses**: Publik
+- **Access**: Public
 - **Headers**:
   - `X-CSRF-Token: <token>`
 
-**Request Body:** Tidak ada.
+**Request Body:** None.
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "Logout berhasil",
+  "message": "Logout successful",
   "data": null
 }
 ```
-*Catatan: Cookie `access_token` dan `refresh_token` dihapus dari browser.*
+*Note: `access_token` and `refresh_token` cookies are cleared.*
 
 ---
 
-### Modul User (`/api/users`)
+### User Module (`/api/users`)
 
-Seluruh endpoint di bawah modul User memerlukan autentikasi (`Authenticate`).
+All endpoints under the User module require authentication (`Authenticate`).
 
-Tabel ikhtisar endpoint user:
+Overview table for user endpoints:
 
-| Method | Endpoint | Akses / Guard | Parameter | Request Body | Status Sukses | Deskripsi |
+| Method | Endpoint | Access / Guard | Parameters | Request Body | Success Status | Description |
 | :---: | :--- | :---: | :--- | :---: | :---: | :--- |
-| `GET` | `/api/users/me` | Authenticated | - | - | `200` | Profil user yang sedang aktif login |
-| `GET` | `/api/users` | Khusus `admin` | Query: `?page=1&limit=10` | - | `200` | Daftar seluruh user dengan paginasi |
-| `GET` | `/api/users/:id` | Authenticated | Path: `:id` (UUID) | - | `200` | Detail user spesifik berdasarkan ID |
-| `PUT` | `/api/users/:id` | Self / Admin | Path: `:id` (UUID) | `{ name?, email? }` | `200` | Memperbarui nama atau email akun |
-| `DELETE` | `/api/users/:id` | Khusus `admin` | Path: `:id` (UUID) | - | `200` | Menghapus user (proteksi akun sendiri) |
+| `GET` | `/api/users/me` | Authenticated | - | - | `200` | Profile of currently authenticated user |
+| `GET` | `/api/users` | `admin` only | Query: `?page=1&limit=10` | - | `200` | List of all users with pagination |
+| `GET` | `/api/users/:id` | Authenticated | Path: `:id` (UUID) | - | `200` | Detail of user by public UUID |
+| `PUT` | `/api/users/:id` | Self / Admin | Path: `:id` (UUID) | `{ name?, email? }` | `200` | Update user name or email |
+| `DELETE` | `/api/users/:id` | `admin` only | Path: `:id` (UUID) | - | `200` | Delete user (prevents deleting active self) |
 
 ---
 
 #### 1. Get Current User Profile (Me)
-Mendapatkan informasi profil dari user yang sedang login.
+Retrieves profile data for the currently authenticated user.
 
 - **Method**: `GET`
 - **URL**: `/api/users/me`
-- **Akses**: User Terotentikasi (semua role)
-- **Cookie**: `access_token` (atau Header `Authorization: Bearer <token>`)
+- **Access**: Authenticated User (all roles)
+- **Cookie**: `access_token` (or Header `Authorization: Bearer <token>`)
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "Berhasil mendapatkan data profil",
+  "message": "Profile retrieved successfully",
   "data": {
     "public_id": "cc3b4487-901b-45b6-8c32-580de73a8aeb",
     "name": "Administrator",
@@ -299,22 +299,22 @@ Mendapatkan informasi profil dari user yang sedang login.
 ---
 
 #### 2. Get All Users (Pagination)
-Melihat daftar seluruh pengguna terdaftar dalam sistem.
+Retrieves a paginated list of all registered users in the system.
 
 - **Method**: `GET`
 - **URL**: `/api/users`
-- **Akses**: Khusus **`admin`**
+- **Access**: **`admin`** only
 - **Query Parameters**:
-  - `page` (opsional, default: `1`): Nomor halaman.
-  - `limit` (opsional, default: `10`, max: `100`): Jumlah data per halaman.
-- **Contoh URL**: `/api/users?page=1&limit=10`
+  - `page` (optional, default: `1`): Page number.
+  - `limit` (optional, default: `10`, max: `100`): Items per page.
+- **Example URL**: `/api/users?page=1&limit=10`
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "Berhasil mengambil data pengguna",
+  "message": "Users retrieved successfully",
   "data": {
     "users": [
       {
@@ -327,8 +327,8 @@ Melihat daftar seluruh pengguna terdaftar dalam sistem.
       },
       {
         "public_id": "8f3b2075-e8d9-4b21-9562-b13c7bb61c6b",
-        "name": "Budi Santoso",
-        "email": "budi@example.com",
+        "name": "John Doe",
+        "email": "john@example.com",
         "role": "user",
         "created_at": "2026-09-05T22:30:00Z",
         "updated_at": "2026-09-05T22:30:00Z"
@@ -342,12 +342,12 @@ Melihat daftar seluruh pengguna terdaftar dalam sistem.
 }
 ```
 
-**Respons Error Contoh (403 Forbidden):**
+**Example Error Response (403 Forbidden):**
 ```json
 {
   "status": "error",
   "code": 403,
-  "message": "Akses ditolak: Anda tidak memiliki izin untuk tindakan ini",
+  "message": "Access denied: you do not have permission for this action",
   "errors": null
 }
 ```
@@ -355,24 +355,24 @@ Melihat daftar seluruh pengguna terdaftar dalam sistem.
 ---
 
 #### 3. Get User By ID
-Mengambil data detail pengguna tertentu berdasarkan UUID `public_id`.
+Retrieves user details by public UUID.
 
 - **Method**: `GET`
 - **URL**: `/api/users/:id`
-- **Akses**: User Terotentikasi
+- **Access**: Authenticated User
 - **Path Parameters**:
-  - `id`: UUID pengguna (misal: `8f3b2075-e8d9-4b21-9562-b13c7bb61c6b`)
+  - `id`: User UUID (e.g. `8f3b2075-e8d9-4b21-9562-b13c7bb61c6b`)
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "Berhasil mendapatkan data user",
+  "message": "User retrieved successfully",
   "data": {
     "public_id": "8f3b2075-e8d9-4b21-9562-b13c7bb61c6b",
-    "name": "Budi Santoso",
-    "email": "budi@example.com",
+    "name": "John Doe",
+    "email": "john@example.com",
     "role": "user",
     "created_at": "2026-09-05T22:30:00Z",
     "updated_at": "2026-09-05T22:30:00Z"
@@ -383,35 +383,35 @@ Mengambil data detail pengguna tertentu berdasarkan UUID `public_id`.
 ---
 
 #### 4. Update User Profile
-Mengubah informasi nama atau email pengguna.
+Updates user name or email address.
 
 - **Method**: `PUT`
 - **URL**: `/api/users/:id`
-- **Akses**: Pemilik akun sendiri atau **`admin`**
+- **Access**: Account Owner or **`admin`**
 - **Headers**:
   - `Content-Type: application/json`
   - `X-CSRF-Token: <token>`
 - **Path Parameters**:
-  - `id`: UUID pengguna target
+  - `id`: Target user UUID
 
 **Request Body:**
 ```json
 {
-  "name": "Budi Santoso Baru",
-  "email": "budi.baru@example.com"
+  "name": "John Doe Updated",
+  "email": "john.updated@example.com"
 }
 ```
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "Berhasil memperbarui data user",
+  "message": "User updated successfully",
   "data": {
     "public_id": "8f3b2075-e8d9-4b21-9562-b13c7bb61c6b",
-    "name": "Budi Santoso Baru",
-    "email": "budi.baru@example.com",
+    "name": "John Doe Updated",
+    "email": "john.updated@example.com",
     "role": "user",
     "created_at": "2026-09-05T22:30:00Z",
     "updated_at": "2026-09-05T23:15:00Z"
@@ -419,12 +419,12 @@ Mengubah informasi nama atau email pengguna.
 }
 ```
 
-**Respons Error Contoh (403 Forbidden jika mengubah akun orang lain):**
+**Example Error Response (403 Forbidden when modifying another user):**
 ```json
 {
   "status": "error",
   "code": 403,
-  "message": "Akses ditolak: Anda tidak memiliki izin untuk mengubah data user lain",
+  "message": "Access denied: You do not have permission to modify another user's data",
   "errors": null
 }
 ```
@@ -432,43 +432,43 @@ Mengubah informasi nama atau email pengguna.
 ---
 
 #### 5. Delete User
-Menghapus pengguna dari database.
+Deletes a user account from the database.
 
 - **Method**: `DELETE`
 - **URL**: `/api/users/:id`
-- **Akses**: Khusus **`admin`**
+- **Access**: **`admin`** only
 - **Headers**:
   - `X-CSRF-Token: <token>`
 - **Path Parameters**:
-  - `id`: UUID pengguna target
+  - `id`: Target user UUID
 
-> **Pengaman Khusus:** Admin tidak dapat menghapus akun miliknya sendiri yang sedang login.
+> **Safety Guard:** An administrator cannot delete their own currently active account.
 
-**Respons Sukses (200 OK):**
+**Success Response (200 OK):**
 ```json
 {
   "status": "success",
   "code": 200,
-  "message": "User berhasil dihapus",
+  "message": "User deleted successfully",
   "data": null
 }
 ```
 
-**Respons Error Contoh (400 Bad Request jika admin menghapus dirinya sendiri):**
+**Example Error Response (400 Bad Request when admin attempts self-deletion):**
 ```json
 {
   "status": "error",
   "code": 400,
-  "message": "Tidak dapat menghapus akun Anda sendiri yang sedang aktif",
+  "message": "Cannot delete your own active account",
   "errors": null
 }
 ```
 
 ---
 
-## 4. Matriks Hak Akses (Role-Based Access Control)
+## 4. Role-Based Access Control (RBAC) Matrix
 
-| Endpoint | Publik | Role `user` | Role `admin` |
+| Endpoint | Public | Role `user` | Role `admin` |
 | :--- | :---: | :---: | :---: |
 | `GET /api/auth/csrf` | ✅ | ✅ | ✅ |
 | `POST /api/auth/register` | ✅ | ✅ | ✅ |
@@ -478,5 +478,5 @@ Menghapus pengguna dari database.
 | `GET /api/users/me` | ❌ | ✅ | ✅ |
 | `GET /api/users` | ❌ | ❌ | ✅ |
 | `GET /api/users/:id` | ❌ | ✅ | ✅ |
-| `PUT /api/users/:id` | ❌ | ✅ *(hanya akun sendiri)* | ✅ *(semua akun)* |
-| `DELETE /api/users/:id` | ❌ | ❌ | ✅ *(kecuali diri sendiri)* |
+| `PUT /api/users/:id` | ❌ | ✅ *(own account only)* | ✅ *(all accounts)* |
+| `DELETE /api/users/:id` | ❌ | ❌ | ✅ *(except self)* |

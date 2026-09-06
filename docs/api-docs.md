@@ -467,6 +467,203 @@ Deletes a user account from the database.
 
 ---
 
+### Board Module (`/api/boards`)
+
+All endpoints under the Board module require authentication (`Authenticate`).
+
+Overview table for board endpoints:
+
+| Method | Endpoint | Access / Guard | Parameters | Request Body | Success Status | Description |
+| :---: | :--- | :---: | :--- | :---: | :---: | :--- |
+| `POST` | `/api/boards` | Authenticated | - | `{ title, description?, due_date? }` | `201` | Create a new board |
+| `GET` | `/api/boards` | Authenticated | Query: `?page=1&limit=10&search=...` | - | `200` | List user's boards with pagination and search |
+| `GET` | `/api/boards/:id` | Owner / Admin | Path: `:id` (UUID) | - | `200` | Retrieve board detail by UUID |
+| `PUT` | `/api/boards/:id` | Owner / Admin | Path: `:id` (UUID) | `{ title?, description?, due_date? }` | `200` | Update board details |
+| `DELETE` | `/api/boards/:id` | Owner / Admin | Path: `:id` (UUID) | - | `200` | Delete board |
+
+---
+
+#### 1. Create Board
+Creates a new Kanban board for the currently authenticated user.
+
+- **Method**: `POST`
+- **URL**: `/api/boards`
+- **Access**: Authenticated User
+- **Headers**:
+  - `Content-Type: application/json`
+  - `X-CSRF-Token: <token>`
+
+**Request Body:**
+```json
+{
+  "title": "Project TaskForge Kanban",
+  "description": "Main project board for backend and frontend tasks",
+  "due_date": "2026-12-31T23:59:59Z"
+}
+```
+
+**Success Response (201 Created):**
+```json
+{
+  "status": "success",
+  "code": 201,
+  "message": "Board created successfully",
+  "data": {
+    "public_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "owner_public_id": "cc3b4487-901b-45b6-8c32-580de73a8aeb",
+    "title": "Project TaskForge Kanban",
+    "description": "Main project board for backend and frontend tasks",
+    "due_date": "2026-12-31T23:59:59Z",
+    "created_at": "2026-09-06T22:15:00Z",
+    "updated_at": "2026-09-06T22:15:00Z"
+  }
+}
+```
+
+---
+
+#### 2. Get User Boards (Pagination & Search)
+Retrieves boards owned by the authenticated user with pagination and optional search filter.
+
+- **Method**: `GET`
+- **URL**: `/api/boards`
+- **Access**: Authenticated User
+- **Query Parameters**:
+  - `search` (optional): Search keyword on `title` or `description`.
+  - `page` (optional, default: `1`): Page number.
+  - `limit` (optional, default: `10`, max: `100`): Items per page.
+- **Example URL**: `/api/boards?page=1&limit=10&search=Kanban`
+
+**Success Response (200 OK):**
+```json
+{
+  "status": "success",
+  "code": 200,
+  "message": "Boards retrieved successfully",
+  "data": {
+    "boards": [
+      {
+        "public_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "owner_public_id": "cc3b4487-901b-45b6-8c32-580de73a8aeb",
+        "title": "Project TaskForge Kanban",
+        "description": "Main project board for backend and frontend tasks",
+        "due_date": "2026-12-31T23:59:59Z",
+        "created_at": "2026-09-06T22:15:00Z",
+        "updated_at": "2026-09-06T22:15:00Z"
+      }
+    ],
+    "total_data": 1,
+    "current_page": 1,
+    "total_pages": 1,
+    "limit": 10
+  }
+}
+```
+
+---
+
+#### 3. Get Board By ID
+Retrieves details of a specific board.
+
+- **Method**: `GET`
+- **URL**: `/api/boards/:id`
+- **Access**: Board Owner or **`admin`**
+- **Path Parameters**:
+  - `id`: Board UUID (e.g. `9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d`)
+
+**Success Response (200 OK):**
+```json
+{
+  "status": "success",
+  "code": 200,
+  "message": "Board retrieved successfully",
+  "data": {
+    "public_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "owner_public_id": "cc3b4487-901b-45b6-8c32-580de73a8aeb",
+    "title": "Project TaskForge Kanban",
+    "description": "Main project board for backend and frontend tasks",
+    "due_date": "2026-12-31T23:59:59Z",
+    "created_at": "2026-09-06T22:15:00Z",
+    "updated_at": "2026-09-06T22:15:00Z"
+  }
+}
+```
+
+**Example Error Response (403 Forbidden):**
+```json
+{
+  "status": "error",
+  "code": 403,
+  "message": "access denied: you do not have permission to view this board",
+  "errors": null
+}
+```
+
+---
+
+#### 4. Update Board
+Updates title, description, or due date of an existing board.
+
+- **Method**: `PUT`
+- **URL**: `/api/boards/:id`
+- **Access**: Board Owner or **`admin`**
+- **Headers**:
+  - `Content-Type: application/json`
+  - `X-CSRF-Token: <token>`
+- **Path Parameters**:
+  - `id`: Target board UUID
+
+**Request Body:**
+```json
+{
+  "title": "Updated TaskForge Kanban",
+  "description": "Updated project description"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "status": "success",
+  "code": 200,
+  "message": "Board updated successfully",
+  "data": {
+    "public_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "owner_public_id": "cc3b4487-901b-45b6-8c32-580de73a8aeb",
+    "title": "Updated TaskForge Kanban",
+    "description": "Updated project description",
+    "due_date": "2026-12-31T23:59:59Z",
+    "created_at": "2026-09-06T22:15:00Z",
+    "updated_at": "2026-09-06T22:20:00Z"
+  }
+}
+```
+
+---
+
+#### 5. Delete Board
+Deletes a board from the system (Soft Delete).
+
+- **Method**: `DELETE`
+- **URL**: `/api/boards/:id`
+- **Access**: Board Owner or **`admin`**
+- **Headers**:
+  - `X-CSRF-Token: <token>`
+- **Path Parameters**:
+  - `id`: Target board UUID
+
+**Success Response (200 OK):**
+```json
+{
+  "status": "success",
+  "code": 200,
+  "message": "Board deleted successfully",
+  "data": null
+}
+```
+
+---
+
 ## 4. Role-Based Access Control (RBAC) Matrix
 
 | Endpoint | Public | Role `user` | Role `admin` |
@@ -481,3 +678,9 @@ Deletes a user account from the database.
 | `GET /api/users/:id` | ❌ | ✅ | ✅ |
 | `PUT /api/users/:id` | ❌ | ✅ *(own account only)* | ✅ *(all accounts)* |
 | `DELETE /api/users/:id` | ❌ | ❌ | ✅ *(except self)* |
+| `POST /api/boards` | ❌ | ✅ | ✅ |
+| `GET /api/boards` | ❌ | ✅ *(own boards)* | ✅ *(own boards)* |
+| `GET /api/boards/:id` | ❌ | ✅ *(own board only)* | ✅ *(all boards)* |
+| `PUT /api/boards/:id` | ❌ | ✅ *(own board only)* | ✅ *(all boards)* |
+| `DELETE /api/boards/:id` | ❌ | ✅ *(own board only)* | ✅ *(all boards)* |
+

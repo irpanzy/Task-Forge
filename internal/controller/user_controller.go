@@ -27,12 +27,12 @@ func NewUserController(userService service.UserService) UserController {
 	return &userController{userService: userService}
 }
 
-// GetProfile mengembalikan detail profile pengguna yang sedang login
+// GetProfile returns the profile of the currently authenticated user
 func (ctrl *userController) GetProfile(c *fiber.Ctx) error {
 	publicIDStr, _ := c.Locals("public_id").(string)
 	publicID, err := uuid.Parse(publicIDStr)
 	if err != nil {
-		return response.Error(c, fiber.StatusUnauthorized, "Identitas pengguna tidak valid", nil)
+		return response.Error(c, fiber.StatusUnauthorized, "Invalid user identity", nil)
 	}
 
 	user, err := ctrl.userService.GetDetail(publicID)
@@ -40,10 +40,10 @@ func (ctrl *userController) GetProfile(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusNotFound, err.Error(), nil)
 	}
 
-	return response.Success(c, fiber.StatusOK, "Berhasil mendapatkan data profil", user)
+	return response.Success(c, fiber.StatusOK, "Profile retrieved successfully", user)
 }
 
-// GetUsers mengambil daftar seluruh pengguna (pagination) - Admin only
+// GetUsers retrieves all users with pagination - Admin only
 func (ctrl *userController) GetUsers(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
@@ -57,18 +57,18 @@ func (ctrl *userController) GetUsers(c *fiber.Ctx) error {
 
 	result, err := ctrl.userService.GetUsers(page, limit)
 	if err != nil {
-		return response.Error(c, fiber.StatusInternalServerError, "Gagal mengambil data pengguna", err.Error())
+		return response.Error(c, fiber.StatusInternalServerError, "Failed to retrieve users", err.Error())
 	}
 
-	return response.Success(c, fiber.StatusOK, "Berhasil mengambil data pengguna", result)
+	return response.Success(c, fiber.StatusOK, "Users retrieved successfully", result)
 }
 
-// GetUserByID mengambil detail user berdasarkan public_id
+// GetUserByID retrieves user details by public_id
 func (ctrl *userController) GetUserByID(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	publicID, err := uuid.Parse(idParam)
 	if err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Format ID user tidak valid", nil)
+		return response.Error(c, fiber.StatusBadRequest, "Invalid user ID format", nil)
 	}
 
 	user, err := ctrl.userService.GetDetail(publicID)
@@ -76,28 +76,28 @@ func (ctrl *userController) GetUserByID(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusNotFound, err.Error(), nil)
 	}
 
-	return response.Success(c, fiber.StatusOK, "Berhasil mendapatkan data user", user)
+	return response.Success(c, fiber.StatusOK, "User retrieved successfully", user)
 }
 
-// UpdateUser memperbarui data user (nama, email)
+// UpdateUser updates user details (name, email)
 func (ctrl *userController) UpdateUser(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	publicID, err := uuid.Parse(idParam)
 	if err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Format ID user tidak valid", nil)
+		return response.Error(c, fiber.StatusBadRequest, "Invalid user ID format", nil)
 	}
 
-	// Cek otorisasi: non-admin hanya boleh mengubah profil miliknya sendiri
+	// Authorization check: non-admin can only update their own profile
 	currentUserID, _ := c.Locals("public_id").(string)
 	currentUserRole, _ := c.Locals("role").(string)
 
 	if !strings.EqualFold(currentUserRole, "admin") && currentUserID != publicID.String() {
-		return response.Error(c, fiber.StatusForbidden, "Akses ditolak: Anda tidak memiliki izin untuk mengubah data user lain", nil)
+		return response.Error(c, fiber.StatusForbidden, "Access denied: You do not have permission to modify another user's data", nil)
 	}
 
 	var req dto.UpdateUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Format JSON tidak valid", err.Error())
+		return response.Error(c, fiber.StatusBadRequest, "Invalid JSON format", err.Error())
 	}
 
 	req.Name = strings.TrimSpace(req.Name)
@@ -108,25 +108,25 @@ func (ctrl *userController) UpdateUser(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, err.Error(), nil)
 	}
 
-	return response.Success(c, fiber.StatusOK, "Berhasil memperbarui data user", updatedUser)
+	return response.Success(c, fiber.StatusOK, "User updated successfully", updatedUser)
 }
 
-// DeleteUser menghapus user berdasarkan public_id - Admin only
+// DeleteUser deletes a user by public_id - Admin only
 func (ctrl *userController) DeleteUser(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	publicID, err := uuid.Parse(idParam)
 	if err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Format ID user tidak valid", nil)
+		return response.Error(c, fiber.StatusBadRequest, "Invalid user ID format", nil)
 	}
 
 	currentUserID, _ := c.Locals("public_id").(string)
 	if currentUserID == publicID.String() {
-		return response.Error(c, fiber.StatusBadRequest, "Tidak dapat menghapus akun Anda sendiri yang sedang aktif", nil)
+		return response.Error(c, fiber.StatusBadRequest, "Cannot delete your own active account", nil)
 	}
 
 	if err := ctrl.userService.Delete(publicID); err != nil {
 		return response.Error(c, fiber.StatusBadRequest, err.Error(), nil)
 	}
 
-	return response.Success(c, fiber.StatusOK, "User berhasil dihapus", nil)
+	return response.Success(c, fiber.StatusOK, "User deleted successfully", nil)
 }

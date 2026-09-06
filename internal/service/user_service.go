@@ -35,19 +35,19 @@ func (s *userService) Register(req *dto.RegisterRequest) (*dto.UserResponse, err
 		return nil, err
 	}
 	if existingUser != nil {
-		return nil, errors.New("email sudah digunakan")
+		return nil, errors.New("email is already registered")
 	}
 
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return nil, errors.New("gagal memproses password")
+		return nil, errors.New("failed to process password")
 	}
 
 	newUser := model.User{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: hashedPassword,
-		Role:     model.RoleUser, 
+		Role:     model.RoleUser,
 	}
 
 	if err := s.userRepo.Create(&newUser); err != nil {
@@ -62,23 +62,23 @@ func (s *userService) Login(req *dto.LoginRequest) (*dto.LoginResponse, error) {
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("email atau password salah")
+			return nil, errors.New("invalid email or password")
 		}
 		return nil, err
 	}
 
 	if !utils.CheckPassword(req.Password, user.Password) {
-		return nil, errors.New("email atau password salah")
+		return nil, errors.New("invalid email or password")
 	}
 
 	accessToken, err := utils.GenerateToken(user.InternalID, string(user.Role), user.Email, user.PublicID)
 	if err != nil {
-		return nil, errors.New("gagal membuat access token")
+		return nil, errors.New("failed to generate access token")
 	}
 
 	refreshToken, err := utils.GenerateRefreshToken(user.InternalID, user.PublicID)
 	if err != nil {
-		return nil, errors.New("gagal membuat refresh token")
+		return nil, errors.New("failed to generate refresh token")
 	}
 
 	return &dto.LoginResponse{
@@ -92,7 +92,7 @@ func (s *userService) GetDetail(publicID uuid.UUID) (*dto.UserResponse, error) {
 	user, err := s.userRepo.FindByPublicID(publicID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user tidak ditemukan")
+			return nil, errors.New("user not found")
 		}
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (s *userService) Update(publicID uuid.UUID, req *dto.UpdateUserRequest) (*d
 	user, err := s.userRepo.FindByPublicID(publicID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user tidak ditemukan")
+			return nil, errors.New("user not found")
 		}
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (s *userService) Update(publicID uuid.UUID, req *dto.UpdateUserRequest) (*d
 	if req.Email != "" && req.Email != user.Email {
 		existing, err := s.userRepo.FindByEmail(req.Email)
 		if err == nil && existing != nil {
-			return nil, errors.New("email baru sudah digunakan oleh akun lain")
+			return nil, errors.New("new email is already in use by another account")
 		}
 		user.Email = req.Email
 	}
@@ -164,7 +164,7 @@ func (s *userService) Delete(publicID uuid.UUID) error {
 	_, err := s.userRepo.FindByPublicID(publicID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user tidak ditemukan")
+			return errors.New("user not found")
 		}
 		return err
 	}

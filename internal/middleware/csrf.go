@@ -20,7 +20,7 @@ func NewCSRF() fiber.Handler {
 		CookieHTTPOnly: false, // False agar client JavaScript bisa membaca token
 		Expiration:     1 * time.Hour,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			return response.Error(c, fiber.StatusForbidden, "CSRF token tidak valid atau hilang", err.Error())
+			return response.Error(c, fiber.StatusForbidden, "Invalid or missing CSRF token", err.Error())
 		},
 	})
 }

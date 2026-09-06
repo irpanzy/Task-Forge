@@ -55,12 +55,12 @@ func GenerateRefreshToken(userID int64, publicID uuid.UUID) (string, error) {
 func VerifyToken(tokenString string) (jwt.MapClaims, error) {
 	secret := config.AppConfig.JWTSecret
 	if secret == "" {
-		return nil, errors.New("JWT_SECRET belum diatur di .env")
+		return nil, errors.New("JWT_SECRET is not configured in .env")
 	}
 
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("metode signing tidak valid: %v", t.Header["alg"])
+			return nil, fmt.Errorf("invalid signing method: %v", t.Header["alg"])
 		}
 		return []byte(secret), nil
 	})
@@ -71,7 +71,7 @@ func VerifyToken(tokenString string) (jwt.MapClaims, error) {
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return nil, errors.New("token tidak valid atau kadaluarsa")
+		return nil, errors.New("invalid or expired token")
 	}
 
 	return claims, nil

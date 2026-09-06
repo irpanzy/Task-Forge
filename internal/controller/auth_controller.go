@@ -36,10 +36,10 @@ func (ctrl *authController) GetCSRFToken(c *fiber.Ctx) error {
 		token = c.Cookies("csrf_")
 	}
 	if token == "" {
-		return response.Error(c, fiber.StatusInternalServerError, "Gagal mendapatkan CSRF token", nil)
+		return response.Error(c, fiber.StatusInternalServerError, "Failed to retrieve CSRF token", nil)
 	}
 
-	return response.Success(c, fiber.StatusOK, "CSRF token berhasil diambil", fiber.Map{
+	return response.Success(c, fiber.StatusOK, "CSRF token retrieved successfully", fiber.Map{
 		"csrf_token": token,
 	})
 }
@@ -47,20 +47,20 @@ func (ctrl *authController) GetCSRFToken(c *fiber.Ctx) error {
 func (ctrl *authController) Register(c *fiber.Ctx) error {
 	var req dto.RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Format JSON tidak valid", err.Error())
+		return response.Error(c, fiber.StatusBadRequest, "Invalid JSON format", err.Error())
 	}
 
 	req.Name = strings.TrimSpace(req.Name)
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 
 	if req.Name == "" {
-		return response.Error(c, fiber.StatusBadRequest, "Nama wajib diisi", nil)
+		return response.Error(c, fiber.StatusBadRequest, "Name is required", nil)
 	}
 	if req.Email == "" || !strings.Contains(req.Email, "@") {
-		return response.Error(c, fiber.StatusBadRequest, "Format email tidak valid", nil)
+		return response.Error(c, fiber.StatusBadRequest, "Invalid email format", nil)
 	}
 	if len(req.Password) < 6 {
-		return response.Error(c, fiber.StatusBadRequest, "Password minimal 6 karakter", nil)
+		return response.Error(c, fiber.StatusBadRequest, "Password must be at least 6 characters", nil)
 	}
 
 	res, err := ctrl.userService.Register(&req)
@@ -68,18 +68,18 @@ func (ctrl *authController) Register(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, err.Error(), nil)
 	}
 
-	return response.Success(c, fiber.StatusCreated, "Registrasi berhasil", res)
+	return response.Success(c, fiber.StatusCreated, "Registration successful", res)
 }
 
 func (ctrl *authController) Login(c *fiber.Ctx) error {
 	var req dto.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Format JSON tidak valid", err.Error())
+		return response.Error(c, fiber.StatusBadRequest, "Invalid JSON format", err.Error())
 	}
 
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" || req.Password == "" {
-		return response.Error(c, fiber.StatusBadRequest, "Email dan password wajib diisi", nil)
+		return response.Error(c, fiber.StatusBadRequest, "Email and password are required", nil)
 	}
 
 	loginRes, err := ctrl.userService.Login(&req)
@@ -112,38 +112,38 @@ func (ctrl *authController) Login(c *fiber.Ctx) error {
 		Path:     "/",
 	})
 
-	return response.Success(c, fiber.StatusOK, "Login berhasil", loginRes.User)
+	return response.Success(c, fiber.StatusOK, "Login successful", loginRes.User)
 }
 
 func (ctrl *authController) Logout(c *fiber.Ctx) error {
 	c.ClearCookie("access_token", "refresh_token")
-	return response.Success(c, fiber.StatusOK, "Logout berhasil", nil)
+	return response.Success(c, fiber.StatusOK, "Logout successful", nil)
 }
 
 func (ctrl *authController) RefreshToken(c *fiber.Ctx) error {
 	refreshToken := c.Cookies("refresh_token")
 	if refreshToken == "" {
-		return response.Error(c, fiber.StatusUnauthorized, "Refresh token tidak ditemukan di cookie", nil)
+		return response.Error(c, fiber.StatusUnauthorized, "Refresh token not found in cookie", nil)
 	}
 
 	claims, err := utils.VerifyToken(refreshToken)
 	if err != nil {
-		return response.Error(c, fiber.StatusUnauthorized, "Refresh token tidak valid atau kadaluarsa", nil)
+		return response.Error(c, fiber.StatusUnauthorized, "Invalid or expired refresh token", nil)
 	}
 
 	publicIDStr, ok := claims["public_id"].(string)
 	if !ok {
-		return response.Error(c, fiber.StatusUnauthorized, "Payload token tidak valid", nil)
+		return response.Error(c, fiber.StatusUnauthorized, "Invalid token payload", nil)
 	}
 
 	publicID, err := uuid.Parse(publicIDStr)
 	if err != nil {
-		return response.Error(c, fiber.StatusUnauthorized, "Format public_id tidak valid", nil)
+		return response.Error(c, fiber.StatusUnauthorized, "Invalid public_id format", nil)
 	}
 
 	userRes, err := ctrl.userService.GetDetail(publicID)
 	if err != nil {
-		return response.Error(c, fiber.StatusUnauthorized, "User tidak ditemukan", nil)
+		return response.Error(c, fiber.StatusUnauthorized, "User not found", nil)
 	}
 
 	var userID int64
@@ -153,7 +153,7 @@ func (ctrl *authController) RefreshToken(c *fiber.Ctx) error {
 
 	newAccessToken, err := utils.GenerateToken(userID, userRes.Role, userRes.Email, userRes.PublicID)
 	if err != nil {
-		return response.Error(c, fiber.StatusInternalServerError, "Gagal membuat access token baru", nil)
+		return response.Error(c, fiber.StatusInternalServerError, "Failed to generate new access token", nil)
 	}
 
 	accessDuration := utils.ParseDuration(config.AppConfig.JWTExpired, 15*time.Minute)
@@ -167,7 +167,7 @@ func (ctrl *authController) RefreshToken(c *fiber.Ctx) error {
 		Path:     "/",
 	})
 
-	return response.Success(c, fiber.StatusOK, "Token berhasil diperbarui", fiber.Map{
+	return response.Success(c, fiber.StatusOK, "Token refreshed successfully", fiber.Map{
 		"access_token": newAccessToken,
 	})
 }

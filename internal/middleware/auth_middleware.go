@@ -22,12 +22,12 @@ func Authenticate() fiber.Handler {
 		}
 
 		if tokenString == "" {
-			return response.Error(c, fiber.StatusUnauthorized, "Autentikasi gagal: token tidak ditemukan", nil)
+			return response.Error(c, fiber.StatusUnauthorized, "Authentication failed: token not found", nil)
 		}
 
 		claims, err := utils.VerifyToken(tokenString)
 		if err != nil {
-			return response.Error(c, fiber.StatusUnauthorized, "Autentikasi gagal: "+err.Error(), nil)
+			return response.Error(c, fiber.StatusUnauthorized, "Authentication failed: "+err.Error(), nil)
 		}
 
 		if publicID, ok := claims["public_id"].(string); ok {
@@ -51,7 +51,7 @@ func RequireRoles(allowedRoles ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userRole, _ := c.Locals("role").(string)
 		if userRole == "" {
-			return response.Error(c, fiber.StatusForbidden, "Akses ditolak: role tidak terdefinisi", nil)
+			return response.Error(c, fiber.StatusForbidden, "Access denied: undefined role", nil)
 		}
 
 		for _, role := range allowedRoles {
@@ -60,6 +60,6 @@ func RequireRoles(allowedRoles ...string) fiber.Handler {
 			}
 		}
 
-		return response.Error(c, fiber.StatusForbidden, "Akses ditolak: Anda tidak memiliki izin untuk tindakan ini", nil)
+		return response.Error(c, fiber.StatusForbidden, "Access denied: you do not have permission for this action", nil)
 	}
 }

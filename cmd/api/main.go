@@ -40,8 +40,12 @@ func main() {
 	authController := controller.NewAuthController(userService)
 	userController := controller.NewUserController(userService)
 
+	boardRepo := repository.NewBoardRepository(config.DB)
+	boardService := service.NewBoardService(boardRepo, userRepo)
+	boardController := controller.NewBoardController(boardService)
+
 	// 5. Setup Routes
-	route.SetupRoutes(app, authController, userController)
+	route.SetupRoutes(app, authController, userController, boardController)
 
 	// 6. Start Server
 	port := config.AppConfig.Port
